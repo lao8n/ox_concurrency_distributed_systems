@@ -1,0 +1,7 @@
+:load ~/Documents/csp/exercises02.csp
+:reload
+:graph VM1
+assert VM1 :[deadlock free]
+assert P :[deterministic[F]]
+assert P :[divergence free]
+assert P :[has trace[F]]: tr

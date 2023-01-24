@@ -1,0 +1,11 @@
+channel coin, tea, coffee
+VM1 = coin -> (coffee -> VM1 [] tea -> VM1)
+VM2 = coin -> (coffee -> VM2 |~| tea -> VM2)
+VM3 = coin -> (coffee -> VM3 |~| tea -> VM3 |~| STOP)
+
+assert VM1 [T= VM2
+assert VM2 [T= VM1
+assert VM1 [F= VM2
+assert VM2 [F= VM1
+assert VM3 [F= VM2 
+assert VM2 [F= VM3

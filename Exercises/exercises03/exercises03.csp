@@ -1,0 +1,55 @@
+channel coin, tea, coffee
+VM1 = coin -> (coffee -> VM1 [] tea -> VM1)
+VM1a = 
+  let 
+    CoffeeOrTea = coin -> (coffee -> CoffeeOrTea [] tea -> CoffeeOrTea)
+  within
+    CoffeeOrTea
+assert VM1 [T= VM1a
+assert VM1a [T= VM1
+
+channel cancel
+VMcancel = coin -> (coffee -> VMcancel [] tea -> VMcancel [] cancel -> VMcancel)
+
+
+channel refill
+VMF(max) = 
+  let
+    State(n) = 
+      n > 0 & coin -> (coffee -> State(n-1) [] tea -> State(n-1))
+      []
+      refill -> State(max)
+  within 
+    State(max)
+
+
+VMR(max) = 
+  let 
+    State(n) = 
+      n > 0 & coin -> (coffee -> State(n-1) [] tea -> State(n-1))
+      |~|
+      refill -> State(max)
+  within 
+    State(max)
+
+channel up, down, arrive, close, open
+LiftController(max) = 
+  let 
+    AtFloorOpen(n) = 
+      close -> AtFloorClosed(n)
+      []
+      (n < max) & up -> GoingUp(n)
+      []
+      (n > 0) & down -> GoingDown(n)
+    AtFloorClosed(n) = 
+      open -> AtFloorOpen(n)
+      []
+      (n < max) & up -> GoingUp(n)
+      []
+      (n > 0) & down -> GoingDown(n)
+    GoingUp(n) = 
+      arrive -> AtFloorOpen(n+1)
+    GoingDown(n) = 
+      arrive -> AtFloorOpen(n-1)
+  within
+    AtFloorOpen(0)
