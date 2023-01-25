@@ -1,0 +1,28 @@
+PersonID = { 0, 1 }
+datatype Sides = inside | outside
+channel enter, leave, detect : Sides . PersonID
+channel rotate
+aDoor = {| enter, leave, rotate |}
+Door = 
+  let 
+    State(Outside,RotatingIn,Inside,RotatingOut) = 
+      empty(Outside) & enter.outside?p  -> State({p},RotatingIn, Inside, RotatingOut)
+      []
+      ([]p : Outside @ leave.outside.p -> State({},RotatingIn,Inside, RotatingOut))
+      []
+      empty(Inside) & enter.inside?p -> State(Outside,RotatingIn,{p},RotatingOut)
+      []
+      ([] p: Inside @ leave.inside.p -> State(Outside,RotatingIn,{}, RotatingOut))
+      []
+      rotate -> State(RotatingOut,Outside,RotatingIn,Inside)
+  within
+    State({},{},{},{})
+
+aDoorController = {| detect, rotate |}}
+DoorController = 
+  let
+    Rotates(n) = 
+       detect.outside?p -> Rotate(4)
+       []  
+  within
+    Rotates(0)

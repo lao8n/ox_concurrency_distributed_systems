@@ -1,0 +1,67 @@
+PlayerID = {0, 1}
+channel look : PlayerID . {0..15}
+channel take : PlayerID . {0..15}
+channel turn, win : PlayerID
+min(i, j) = if i < j then i else j
+
+alphaMatches  = {| look, take |}
+Matches = 
+  let 
+    Remaining(n) = 
+      look?p!n -> Remaining(n)
+      []
+      (n > 0) & [] m : {1..n} @ take?p!m -> Remaining(n-m)
+  within
+    Remaining(15)
+
+alphaPlayer(p) = {| turn, look.p, take.p, win.p |}
+Player(p) = 
+  let
+    MyTurn = turn.p ->  Look(p)
+    Look(p) = look!p?n -> Looked(n)
+    Looked(n) = (n > 0) & Act(n) [] (n == 0) & win.p -> STOP
+    Act(n) = |~| k : {1..min(3, n)} @ take!p!k -> YourTurn
+    YourTurn = turn.(p+1)%2 -> MyTurn
+  within
+    MyTurn [] YourTurn
+
+alphaPlayers = {| turn, look, take, win |}
+Players = || p : PlayerID @ [alphaPlayer(p)] Player(p)
+
+Game = Matches [ alphaMatches || alphaPlayers ] Players
+assert Game :[deadlock free]
+
+SmartPlayer(p) = 
+  let
+    MyTurn = turn.p -> Look(p)
+    Look(p) = look!p?n -> Looked(n)
+    Looked(n) = (n > 0) & Act(n) [] (n == 0) & win.p -> STOP
+    Act(n) = 
+      n%4 == 1 & take!p!1 -> YourTurn
+      []
+      n%4 != 1 & take!p!(n+3)%4 -> YourTurn
+    YourTurn = turn.(p+1)%2 -> MyTurn 
+  within 
+    MyTurn [] YourTurn
+
+FirstPlayerWins = 
+  let 
+    Wins(p) = 
+      (|~| q : PlayerID @ (|~| n : {0..15} @ look.q.n -> Wins(p)))
+      |~|
+      (|~| q : PlayerID @ (|~| n : {0..15} @ take.q.n -> Wins(p)))
+      |~|
+      (|~| q : PlayerID @ (turn.q -> Wins(q)))
+      |~|
+      win.p -> STOP
+  within
+    |~| p : {0,1} @ turn.p -> Wins(p)
+
+SmartPlayers = 
+  || p : PlayerID @ [alphaPlayer(p)] SmartPlayer(p)
+
+SmartGame =
+  Matches [ alphaMatches || alphaPlayers ] SmartPlayers
+
+assert FirstPlayerWins [T= SmartGame
+assert FirstPlayerWins [FD= SmartGame

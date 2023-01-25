@@ -1,0 +1,61 @@
+channel insert : Coin
+channel green, red, ticket
+channel store, return : {0..400}
+channel service
+Coin = {50,100}
+price = 100
+bufferCap = 4
+storeCap = 8
+rollSize = 2
+aCoinBuffer = {| insert, green, red, store, return |}
+CoinBuffer =
+  let
+    Holding(n,v) =
+      n < bufferCap &
+        insert?c -> Holding(n+1,v+c)
+      []
+      green -> ( if v >= price then
+                   Purchasing(n,v)
+                 else
+           Holding(n,v) )
+      []
+      red -> Returning(v)
+    Purchasing(n,v) =
+      green -> Purchasing(n,v)
+      []
+      red -> Returning(v)
+      []
+      store!n -> Holding(0,0)
+    Returning(v) =
+      return!v -> Holding(0,0)
+  within
+    Holding(0,0)
+
+aCoinStore = {| store, service |}
+CoinStore =
+  let
+    Holding(m) =
+      store?n:{1..(storeCap-m)} -> Holding(m+n)
+      []
+      service -> Holding(0)
+  within
+    Holding(0)
+
+aTicketRoll = {| store, service, ticket |}
+TicketRoll =
+  let
+    Holding(t) =
+      (t > 0) & store?n -> ticket -> Holding(t-1)
+      []
+      service -> Holding(rollSize)
+  within
+    Holding(rollSize)
+
+TicketMachine =
+  CoinBuffer
+  [ aCoinBuffer || union(aCoinStore,aTicketRoll) ]
+  ( CoinStore [ aCoinStore || aTicketRoll ] TicketRoll )
+assert TicketMachine :[deadlock free]
+TicketMachineWithoutService =
+  TicketMachine [ aTicketMachine || {service} ] STOP
+assert TicketMachineWithoutService :[deadlock free]

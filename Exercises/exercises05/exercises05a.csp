@@ -35,3 +35,19 @@ R =
 
 PQR = PQ [ {a, b, c, d, e, f} || {a, b, c, d} ] R
 assert PQR :[deadlock free]
+
+
+S = 
+  let
+    Init = 
+      ( [] x : {a, b, c, d} @ x -> State)
+      []
+      ( STOP |~| e -> Init |~| f -> Init)
+    State = 
+      ( STOP |~| |~| x : {a, b, c, d} @ x -> State)
+      []
+      ( STOP |~| e -> Init |~| f -> Init)
+  within
+    Init
+
+assert S [FD= PQR
