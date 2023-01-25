@@ -1,0 +1,19 @@
+channel coin, coffee, tea
+Person1 = coin -> (coffee -> Person1 [] tea -> Person1)
+Person2 =  coin -> (coffee -> Person2 |~| tea -> Person2)
+Person3 = coin -> coffee -> Person3
+VM1 = coin -> (coffee -> VM1 [] tea -> VM1)
+VM2 = coin -> (coffee -> VM2 |~| tea -> VM2)
+VM3 = coin -> (coffee -> VM3 |~| tea -> VM3 |~| STOP)
+P1V1 = Person1 [{coin, coffee, tea} || {coin, coffee, tea}] VM1
+P1V2 = Person1 [{coin, coffee, tea} || {coin, coffee, tea}] VM2
+P1V3 = Person1 [{coin, coffee, tea} || {coin, coffee, tea}] VM3
+P2V1 = Person2 [{coin, coffee, tea} || {coin, coffee, tea}] VM1
+P2V2 = Person2 [{coin, coffee, tea} || {coin, coffee, tea}] VM2
+P2V3 = Person2 [{coin, coffee, tea} || {coin, coffee, tea}] VM3
+P3V1 = Person3 [{coin, coffee, tea} || {coin, coffee, tea}] VM1
+P3V2 = Person3 [{coin, coffee, tea} || {coin, coffee, tea}] VM2
+P3V3 = Person3 [{coin, coffee, tea} || {coin, coffee, tea}] VM3
+P3NTV1 = Person3 [{coin, coffee} || {coin, coffee, tea}] VM1
+P3NTV2 = Person3 [{coin, coffee} || {coin, coffee, tea}] VM2
+P3NTV3 = Person3 [{coin, coffee} || {coin, coffee, tea}] VM3

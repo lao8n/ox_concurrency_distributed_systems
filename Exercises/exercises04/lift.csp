@@ -1,0 +1,19 @@
+channel max
+
+LiftController(max) = 
+  let 
+    AtFloorOpen(n) = 
+      close -> AtFloorClosed(n)
+      []
+      (n < max) & up -> arrive -> AtFloorOpen(n+1)
+      []
+      (n > 0) & down -> arrive -> AtFloorOpen(n-1)
+    AtFloorClosed(n) = 
+      open -> AtFloorOpen(n)
+      []
+      (n < max) & up -> arrive -> AtFloorOpen(n+1)
+      []
+      (n > 0) & down -> arrive -> AtFloorOpen(n-1)
+
+ConsecutiveEventsSpec(max) = 
+  up -> ConsecutiveEventsSpec(max-1) -> STOP

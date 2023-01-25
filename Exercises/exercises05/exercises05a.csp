@@ -1,0 +1,37 @@
+channel a, b, c, d, e, f
+P = 
+  let 
+    P1 = a -> P2 []  b -> P3
+    P2 = e -> P1
+    P3 = f -> P1
+  within
+    P1
+
+Q = 
+  let 
+    Q1 = c -> Q2 [] d -> Q3
+    Q2 = e -> Q1
+    Q3 = f -> Q1
+  within
+    Q1
+
+alphaP = {a, b, e, f}
+alphaQ = {c, d, e, f}
+PQ = P [ alphaP || alphaQ ] Q
+
+assert PQ :[deadlock free]
+
+R = 
+  let State = 
+    a -> c -> State
+    []
+    b -> d -> State
+    []
+    c -> a -> State
+    []
+    d -> b -> State
+  within 
+    State
+
+PQR = PQ [ {a, b, c, d, e, f} || {a, b, c, d} ] R
+assert PQR :[deadlock free]
