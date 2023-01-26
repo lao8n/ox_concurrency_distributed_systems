@@ -18,11 +18,30 @@ Door =
   within
     State({},{},{},{})
 
-aDoorController = {| detect, rotate |}}
+aDoorController = {| detect, rotate |}
 DoorController = 
   let
     Rotates(n) = 
-       detect.outside?p -> Rotate(4)
-       []  
+       rotate -> Rotates(n-1)
+       []
+       detect?s?p -> Rotates(4)
   within
     Rotates(0)
+
+aConstraint(p) = { enter.s.p, leave.s.p, detect.s.p | s <- Sides }
+Constraint(p) = 
+  let 
+    InTheDoor = leave?s!p -> NotInTheDoor
+    NotInTheDoor = detect?s!p -> enter!s!p -> InTheDoor
+  within
+    NotInTheDoor
+
+aAssumption = {| enter, leave, detect |}
+Assumption = || p : PersonID @ [aConstraint(p)] Constraint(p)
+
+aDoorSystem = {| enter, leave, rotate, detect |}
+DoorSystem = DoorController [ aDoorController || aDoor ] Door
+
+DoorSystemWithAssumption = DoorSystem [ aDoorSystem || aAssumption ] Assumption
+
+assert DoorSystemWithAssumption :[deadlock free]
