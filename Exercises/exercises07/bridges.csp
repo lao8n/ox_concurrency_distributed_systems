@@ -1,0 +1,100 @@
+channel depart, arrive, start, finish : LOCATION
+
+channel done
+
+channel success
+
+datatype LOCATION = A | B | C | D
+
+BridgeOnce(x,y) =
+  depart.x -> arrive.y -> DONE
+  []
+  depart.y -> arrive.x -> DONE
+
+Bridge(1) = BridgeOnce(A,B)
+Bridge(2) = BridgeOnce(A,B)
+Bridge(3) = BridgeOnce(A,C)
+Bridge(4) = BridgeOnce(B,C)
+Bridge(5) = BridgeOnce(B,D)
+Bridge(6) = BridgeOnce(B,D)
+Bridge(7) = BridgeOnce(C,D)
+Bridge(8) = BridgeOnce(A,C)
+
+Location(l) =
+  let
+    Absent = arrive.l -> Present
+             []
+             start.l -> Present
+
+    Present = finish.l -> Present
+              []
+              depart.l -> Absent
+  within
+    Absent
+
+Locations = (||| l : {A,B,C,D} @ Location(l))
+
+Bridges = [| {done} |] b : {1..7} @ Bridge(b)
+
+LocationsAndBridges =
+  Locations [| {| arrive,depart |} |] Bridges
+
+Start(l) =
+  start.l -> STOP
+
+Tour(l) =
+  start.l -> done -> finish.l -> STOP
+
+StartRoute(l) =
+  LocationsAndBridges [| {| start, finish |} |] Start(l)
+
+TourRoute(l) =
+  LocationsAndBridges [| {| start,finish,done |} |] Tour(l)
+
+assert STOP [T= StartRoute(A) \ {| start,  arrive, depart |} 
+assert STOP [T= StartRoute(B) \ {| start,  arrive, depart |} 
+assert STOP [T= StartRoute(C) \ {| start,  arrive, depart |} 
+assert STOP [T= StartRoute(D) \ {| start,  arrive, depart |} 
+
+VisitAll =
+  let
+    Visited(L) =
+      arrive?l -> Visited(union(L,{l}))
+      []
+      start?l -> Visited(union(L,{l}))
+      []
+      (L == LOCATION) & success -> STOP
+  within
+    Visited({})
+
+Success = success -> STOP
+
+assert Success [FD=
+  (StartRoute(A) [| {| arrive,start |} |] VisitAll) \ {| arrive,depart,start |} 
+
+assert Success [FD=
+  (StartRoute(B) [| {| arrive,start |} |] VisitAll) \ {| arrive,depart,start |} 
+
+assert Success [FD=
+  (StartRoute(C) [| {| arrive,start |} |] VisitAll) \ {| arrive,depart,start |} 
+
+assert Success [FD=
+  (StartRoute(D) [| {| arrive,start |} |] VisitAll) \ {| arrive,depart,start |} 
+
+DONE = done -> STOP
+
+assert STOP [T=
+  (TourRoute(A) [| {| arrive,start |} |] VisitAll) \
+    {| arrive,depart,start,done,success |}   
+
+assert STOP [T=
+  (TourRoute(B) [| {| arrive,start |} |] VisitAll) \
+    {| arrive,depart,start,done,success |}   
+
+assert STOP [T=
+  (TourRoute(C) [| {| arrive,start |} |] VisitAll) \
+    {| arrive,depart,start,done,success |}   
+
+assert STOP [T=
+  (TourRoute(D) [| {| arrive,start |} |] VisitAll) \
+    {| arrive,depart,start,done,success |}   

@@ -1,0 +1,32 @@
+datatype LOC = A | B | C | D
+channel start, depart, arrive : LOC
+
+Location(l) = 
+  let
+    Here = depart.l -> NotHere
+    NotHere = start.l -> Here [] arrive.l -> Here
+  within
+    NotHere
+
+Locations = ||| l : LOC @ Location(l)
+aLocation(l) = {| start.l, depart.l, arrive.l |}
+aLocations = || l : LOC @ [aLocation(l)] Location(l)
+assert Locations [T= aLocations
+channel done
+
+Bridge(l, m) = 
+  depart.l -> arrive.m -> done -> STOP
+  []
+  depart.m -> arrive.l -> done -> STOP
+
+bridge(1) = Bridge(A, B)
+bridge(2) = Bridge(A, B)
+bridge(3) = Bridge(A, C)
+bridge(4) = Bridge(B, C)
+bridge(5) = Bridge(B, D)
+bridge(6) = Bridge(B, D)
+bridge(7) = Bridge(C, D)
+
+Bridges = [| {done} |] b : {1..7} @ bridge(b)
+
+
