@@ -29,4 +29,3 @@ bridge(7) = Bridge(C, D)
 
 Bridges = [| {done} |] b : {1..7} @ bridge(b)
 
-
