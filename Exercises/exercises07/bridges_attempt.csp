@@ -28,4 +28,8 @@ bridge(6) = Bridge(B, D)
 bridge(7) = Bridge(C, D)
 
 Bridges = [| {done} |] b : {1..7} @ bridge(b)
-
+City = Locations [|{| arrive, depart |}|] Bridges
+Start = 
+Routes = City [| {| start |} |] Start
+assert STOP [T= Routes \ {| start, arrive, depart |}
+assert Routes \ {| start, arrive, depart |} [T= done -> STOP

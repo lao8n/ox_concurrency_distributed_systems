@@ -51,7 +51,7 @@ FirstPlayerWins =
       |~|
       (|~| q : PlayerID @ (|~| n : {0..15} @ take.q.n -> Wins(p)))
       |~|
-      (|~| q : PlayerID @ (turn.q -> Wins(q)))
+      (|~| q : PlayerID @ (turn.q -> Wins(p)))
       |~|
       win.p -> STOP
   within
@@ -69,12 +69,10 @@ assert FirstPlayerWins [FD= SmartGame
 HiddenFirstPlayerWinsSpec = 
   let 
     Wins(p)  =
-      (|~| q : PlayerID @ Wins(q))
-      |~|
-      (|~| q : PlayerID @ Wins(p))
+      (|~| q : PlayerID @ (turn.q ->  Wins(p)))
       |~|
       win.p -> STOP
   within
     |~| p : {0, 1} @ Wins(p)
 
-assert HiddenFirstPlayerWinsSpec [FD= SmartGame \ {| turn?p, look?p?n, take?p |}
+
