@@ -1,0 +1,100 @@
+-- medical accelerator
+
+datatype position = high | low
+
+channel setHigh, setLow, fire, cancel, shieldHigh, shieldLow, beamHigh, beamLow 
+
+System = 
+  SetLow ; Ready
+
+Ready = 
+  setHigh -> High [] setLow -> Low
+
+High = 
+  (HighTreatment /\ cancel -> SKIP) ; Ready
+
+HighTreatment = 
+  SetHigh ; fire -> SKIP ; SetLow 
+
+SetHigh = 
+  beamHigh -> SKIP ||| shieldHigh -> SKIP 
+
+SetLow = 
+  beamLow -> SKIP ||| shieldLow -> SKIP
+
+Low  = 
+  (LowTreatment /\ cancel -> SKIP) ; Ready
+
+LowTreatment = 
+  fire -> SKIP
+
+Safe =
+  let
+    State(b,s) =
+      (b == s) & fire -> State(b,s)
+      []
+      beamHigh -> State(high,s)
+      []
+      beamLow -> State(low,s)
+      []
+      shieldHigh -> State(b,high)
+      []
+      shieldLow -> State(b,low)
+  within
+    State(low,low)
+
+assert Safe [T= System \ { setHigh, setLow, cancel } 
+
+-- bridges of koenigsburg
+
+datatype LOC = A | B | C | D
+
+channel start, depart, arrive : LOC 
+
+channel done
+
+Location(l) =
+  let
+    Here =
+      depart.l -> NotHere
+
+    NotHere =
+      start.l -> Here
+      []
+      arrive.l -> Here
+  within
+    NotHere
+
+Locations = ||| l : LOC @ Location(l)
+
+Bridge(l,m) =
+  depart.l -> arrive.m -> done -> STOP
+  []
+  depart.m -> arrive.l -> done -> STOP 
+
+bridge(1) = Bridge(A,B) 
+bridge(2) = Bridge(A,B)
+bridge(3) = Bridge(A,C)
+bridge(4) = Bridge(B,C)
+bridge(5) = Bridge(B,D)
+bridge(6) = Bridge(B,D)
+bridge(7) = Bridge(C,D)
+bridge(8) = Bridge(A,C)
+
+Bridges = [| {done} |] b : {1..8} @ bridge(b)
+
+City = 
+  Locations [| {| arrive,depart |} |] Bridges
+
+Start =
+  [] l : LOC @ start.l -> STOP
+
+Routes =
+  City [| {| start |} |] Start
+  
+assert done -> STOP [T= Routes \ {| start, arrive, depart |}
+
+assert STOP [T= Routes \ {| start, arrive, depart |}
+
+assert Routes \ {| start, arrive, depart |} [T= done -> STOP
+

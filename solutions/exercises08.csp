@@ -1,0 +1,173 @@
+FLOOR = {0,1}
+
+datatype PERSON = aa | bb | cc
+
+-- floor
+
+channel enterLift, exitLift : FLOOR . PERSON
+channel enterBuilding, exitBuilding : PERSON
+channel call : FLOOR . PERSON
+
+Floor(f) = 
+  let
+    Holding(P) =
+      call!f?p -> Holding(P)
+      []
+      enterLift!f?p:P -> Holding(diff(P,{p}))
+      []
+      exitLift!f?p -> Holding(union(P,{p}))
+      []
+      f == 0 & ( enterBuilding?p -> Holding(union(P,{p}))
+                 []
+		 exitBuilding?p:P -> Holding(diff(P,{p})) )
+  within
+    Holding({})
+
+Floors =
+  ||| f : FLOOR @ Floor(f)
+
+aFloors = {| call, enterLift, exitLift, enterBuilding, exitBuilding |}
+
+-- lift 
+
+channel request : FLOOR . PERSON
+channel goto : FLOOR
+channel close, open 
+
+Lift = 
+  let
+    Open(f,P) =
+      request?f?p:P -> Open(f,P)
+      []
+      enterLift!f?p -> Open(f,union(P,{p}))
+      []
+      exitLift!f?p:P -> Open(f,diff(P,{p}))
+      []
+      close -> Closed(f,P)
+
+    Closed(f,P) =
+      request?f?p:P -> Closed(f,P)
+      []
+      goto?g -> Closed(g,P)      
+      []
+      open -> Open(f,P)
+  within 
+    Closed(0,{})
+
+aLift = {| request, enterLift, exitLift, open, close, goto, check |}
+
+-- controller
+
+channel authorise, deauthorise : PERSON
+
+datatype AUTHORISED = yes | no 
+channel check : PERSON . AUTHORISED
+
+Controller = 
+  let   
+    State(s,A) = 
+      s != <> & 
+        goto!head(s) -> State(tail(s),A)
+      []
+      length(s) < 3 & 
+        ( request?f?p:A -> State(s^<f>,A) 
+          []
+          call?f?p:A -> State(s^<f>,A) )
+      []
+      authorise?p -> State(s,union(A,{p}))
+      []
+      deauthorise?p -> State(s,diff(A,{p}))
+      []
+      check?p:A!yes -> State(s,A)
+      []
+      check?p:diff(PERSON,A)!no -> State(s,A)
+within
+    State(<>,{}) 
+
+aController = {| goto, request, call, authorise, deauthorise, check |}
+
+-- building
+
+Building =
+  (Lift [aLift || aController] Controller)
+  [ union(aLift,aController) || aFloors ]
+  Floors   
+  
+assert Building :[deadlock free]
+
+aBuilding = {| enterBuilding, exitBuilding, enterLift, exitLift, goto, call, request, open, close, check, authorise, deauthorise |}
+
+-- security
+
+Secure =
+  let
+    Authorised(A) =
+      ([] e : {| enterBuilding, exitBuilding, enterLift, exitLift.0, goto, call, request, open, close, check |} @ e ->
+         Authorised(A))
+      []
+      authorise?p -> Authorised(union(A,{p}))
+      []
+      deauthorise?p -> Authorised(diff(A,{p}))
+      []
+      exitLift.1?p:A -> Authorised(A)
+  within
+    Authorised({})
+
+assert Secure [T= Building
+
+-- assumption
+
+Assumption(p) =
+  let
+    Outside =
+      enterLift.0.p -> Inside
+      []
+      deauthorise.p -> Outside
+
+    Inside =
+      exitLift.0.p -> Outside
+  within
+    Outside
+
+Assumptions = ||| p : PERSON @ Assumption(p)
+
+aAssumptions = {| deauthorise, enterLift.0, exitLift.0 |}
+
+SmartLift = 
+  let
+    Open(f,P) =
+      request?g?p:P -> Open(f,P)
+      []
+      enterLift!f?p -> Open(f,union(P,{p}))
+      []
+      exitLift!f?p:P -> Open(f,diff(P,{p}))
+      []
+      close -> Check(f,P,P)
+
+    Check(f,P,Q) =
+      check?p:Q!yes -> Check(f,P,diff(Q,{p}))
+      []
+      check?p:Q!no -> open -> Open(f,P)
+      []
+      request?g?p:P -> Check(f,P,Q)
+      []
+      (Q == {}) & goto?g -> Check(g,P,{})      
+      []
+      open -> Open(f,P)
+  within 
+    Open(0,{})
+
+SmartBuilding =
+  (SmartLift [aLift || aController] Controller)
+  [ union(aLift,aController) || aFloors ]
+  Floors   
+  
+assert Secure [T= (SmartBuilding [aBuilding || aAssumptions] Assumptions)
+
+
+
+
+	 
+  
+
+

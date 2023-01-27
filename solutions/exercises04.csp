@@ -1,0 +1,199 @@
+channel coin, tea, coffee
+
+NVM =
+  coin ->
+    (tea -> NVM
+     |~|
+     coffee -> NVM)
+
+channel open, close, up, down, arrive 
+
+channel refill
+
+VMR(max) =
+  let 
+    Ready(n) =
+      (n > 0) & 
+        ( STOP |~|
+	  coin ->
+            ( tea -> Ready(n-1)
+  	      []
+	      coffee -> Ready(n-1) ) )
+      []
+      refill -> Ready(max)
+    within
+      Ready(max)
+
+-- all the -- assertions given should fail
+
+VM =
+  coin ->
+    (tea -> VM
+     []
+     coffee -> VM)
+     
+-- assert VMR(2) [FD= VMR(3)
+-- assert VM [FD= VMR(1)
+-- assert NVM [FD= VMR(1)
+
+-- this one should pass
+
+-- assert VMR(3) [FD= VMR(2)
+
+-- lift controller
+
+LiftController(max) =
+  let
+    AtFloorOpen(n) =
+      close -> AtFloorClosed(n)
+      []
+      (n < max) & up -> GoingUp(n)
+      []
+      (n > 0) & down -> GoingDown(n)
+
+    AtFloorClosed(n) =
+      open -> AtFloorOpen(n)
+      []
+      (n < max) & up -> GoingUp(n)
+      []
+      (n > 0) & down -> GoingDown(n)
+
+    GoingUp(n) = 
+      arrive -> AtFloorOpen(n+1)
+
+    GoingDown(n) = 
+      arrive -> AtFloorOpen(n-1)
+  within
+    AtFloorOpen(0)
+    
+-- safety (literal, but not quite right!)
+
+SafetyX(max) =
+  let
+    Ups(n) =
+      (n < max) & up -> Ups(n+1)
+      []
+      ( [] e : {open,close,arrive,down} @ e -> Ups(0) )
+  within
+    Ups(0)
+
+-- assert SafetyX(5) [T= LiftController(5)
+
+-- passes, but the real specification ought to be "does no more
+--   than max ups without an intervening down"
+
+-- safety (getting it right this time)
+
+Safety(max) =
+  let
+    Ups(n) =
+      (n < max) & up -> Ups(n+1)
+      []
+      ( [] e : {open,close,arrive} @ e -> Ups(n) )
+      []
+      (n > 0) & down -> Ups(n-1) 
+  within
+    Ups(0)
+
+-- assert Safety(5) [T= LiftController(5)
+
+-- assert Safety(4) [T= LiftController(5)
+
+-- 
+
+Spec(max) =
+  let
+    AtFloorOpen(n) =
+      (n<max) & up -> GoingUp(n)
+
+    GoingUp(n) =
+      arrive -> AtFloorOpen(n+1)
+  within
+    AtFloorOpen(0)
+
+-- assert LiftController(5) [T= Spec(5)
+-- assert LiftController(5) [T= Spec(6)
+
+-- liveness
+
+Live =
+  (up -> Live |~| down -> Live |~| arrive -> Live)
+  []
+  ( STOP
+    |~|
+    ( |~| e : {open, close, arrive, up, down} @ e -> Live ) )
+
+
+Live2 =
+  let
+    AtFloor =
+     (up -> BetweenFloors |~| down -> BetweenFloors)
+     []
+     ( STOP
+       |~|
+       ( |~| e : {open, close, arrive} @ e -> AtFloor ) )
+
+    BetweenFloors =
+     arrive -> AtFloor
+     []
+     ( STOP
+       |~|
+       ( |~| e : {open, close, up, down} @ e -> BetweenFloors ) )
+   within
+     AtFloor
+
+assert Live [FD= LiftController(4)
+
+assert Live2 [FD= LiftController(4)
+
+-- this should be true, as Live2 is more of a constraint
+
+assert Live [T= Live2
+
+assert Live [FD= Live2
+
+assert Live2 [FD= Live
+
+-- extra stuff from the slides, -- assertions commented out
+
+Spec1 =
+  let 
+    CanOpen = open -> CanOpen 
+  within 
+    CanOpen
+
+-- -- assert Spec1 [F= LiftController(1)
+
+Spec2 =
+  let 
+    CanOpen = 
+      open -> CanOpen
+      []
+    ( STOP 
+      |~|
+     (|~| e : {close,arrive,up,down} @ e -> CanOpen) )
+  within 
+    CanOpen 
+
+-- -- assert Spec2 [F= LiftController(1)
+
+Spec3 =
+  let 
+    CanOpen = 
+      open -> Next
+      []
+     (open -> Next |~| (|~| e : {close,arrive,up,down} @ e -> Next))
+    CanArriveOrClose = 
+     (|~| e : {arrive,close} @ e -> CanOpen)
+      []
+     (STOP |~| (|~| e : {up,down} @ e -> Next))
+    Next = CanOpen |~| CanArriveOrClose
+  within 
+    Next
+
+-- -- assert Spec3 [F= LiftController(1)
+
+-- assert LiftController(1) :[deterministic]
+
+-- assert LiftController(1) :[has trace]: <up,arrive,down,arrive>
+
