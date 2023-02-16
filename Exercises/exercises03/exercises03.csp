@@ -18,7 +18,7 @@ VMF(max) =
     State(n) = 
       n > 0 & coin -> (coffee -> State(n-1) [] tea -> State(n-1))
       []
-      refill -> State(max)
+      n < max & refill -> State(max)
   within 
     State(max)
 
