@@ -1,4 +1,4 @@
-channel max
+channel up, down, arrive, close, open
 
 LiftController(max) = 
   let 
@@ -14,6 +14,20 @@ LiftController(max) =
       (n < max) & up -> arrive -> AtFloorOpen(n+1)
       []
       (n > 0) & down -> arrive -> AtFloorOpen(n-1)
+  within
+    AtFloorOpen(0)
 
 ConsecutiveEventsSpec(max) = 
-  up -> ConsecutiveEventsSpec(max-1) -> STOP
+  let 
+    ConsecutiveEventsSpec(n) = 
+      (n > 0) & up -> ConsecutiveEventsSpec(n - 1)
+      []
+      (n == 0) & up -> STOP
+      [] 
+      down -> ConsecutiveEventsSpec(max)
+      []
+      []e : {arrive, close, open} @ e -> ConsecutiveEventsSpec(n)
+  within
+    ConsecutiveEventsSpec(max)
+
+assert ConsecutiveEventsSpec(2) [T= LiftController(2)

@@ -1,0 +1,37 @@
+channel up, down, arrive, close, open
+
+LiftController(max) = 
+  let 
+    AtFloorOpen(n) = 
+      close -> AtFloorClosed(n)
+      []
+      (n < max) & up -> GoingUp(n)
+      []
+      (n > 0) & down -> GoingDown(n)
+    AtFloorClosed(n) = 
+      open -> AtFloorOpen(n)
+      []
+      (n < max) & up -> GoingUp(n)
+      []
+      (n > 0) & down -> GoingDown(n)
+    GoingUp(n) = 
+      arrive -> AtFloorOpen(n+1)
+    GoingDown(n) = 
+      arrive -> AtFloorOpen(n-1)
+  within
+    AtFloorOpen(0)
+
+Spec = 
+  let 
+    Ground = 
+      up -> First
+      []
+      ([]e : {open, close, arrive} @ e -> Ground)
+    First = 
+      down -> Ground
+      []
+      ([]e : {open, close, arrive} @ e -> First)
+    within
+      Ground
+
+assert Spec [T= LiftController(2)
