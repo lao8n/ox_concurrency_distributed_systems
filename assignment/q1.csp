@@ -28,11 +28,7 @@ R =
         R1
 
 System = 
-    ( P 
-      [| {c} |]
-      Q )
-    [| {d, e, f } |]
-    R
+    ( P [| {c} |] Q ) [| {d, e} |] R
 
 -- (a)
 
@@ -82,6 +78,8 @@ PQR =
             ((a -> P2Q1R2) 
             |~|
             (b -> P1Q2R2))
+            []
+            (f -> P1Q1R1)
         P1Q2R1 = 
             (a -> P2Q2R1)
             []
@@ -89,7 +87,7 @@ PQR =
         P1Q2R2 = 
             (a -> P2Q2R2)
             []
-            STOP
+            (f -> P1Q2R1)
         P2Q1R1 = 
             ((b -> P2Q2R1)
             |~|
@@ -101,14 +99,13 @@ PQR =
             |~|
             (c -> P2Q2R2))
             []
-            STOP
+            (f -> P2Q1R1)
         P2Q2R1 = 
             (e -> P1Q2R2)
             []
             (d -> P2Q1R2)
         P2Q2R2 = 
-            STOP
-
+            (f -> P2Q2R1)
     within
         P1Q1R1
 
@@ -116,3 +113,87 @@ assert System [T= PQR
 assert PQR [T= System
 assert System [FD= PQR
 assert PQR [FD= System
+
+-- (c)
+
+SystemH = System \ {c, d, e}
+
+-- (i)
+
+SpecI =
+    let
+        AB = 
+            (a -> F)
+            []
+            (b -> F)
+        F = 
+            (f -> AB) 
+    within
+        AB
+
+assert SystemH [T= SpecI
+
+-- (ii)
+
+SpecII = 
+    let 
+        AB =
+            (a -> (f -> AB) |~| AB) 
+            |~|
+            (b -> (f -> AB) |~| AB)
+    within
+        AB
+
+assert SpecII [FD= SystemH
+
+-- (iii)
+
+SpecIII = 
+     let
+        P1Q1R1 = 
+            (a -> P2Q1R1)
+            []
+            ((a -> P2Q1R1) 
+            |~|
+            (b -> P1Q2R1))
+        P1Q1R2 = 
+            (a -> P2Q1R2)
+            []
+            ((a -> P2Q1R2) 
+            |~|
+            (b -> P1Q2R2))
+            []
+            (f -> P1Q1R1)
+        P1Q2R1 = 
+            (a -> P2Q2R1)
+            |~|
+            P1Q1R2
+        P1Q2R2 = 
+            (a -> P2Q2R2)
+            []
+            (f -> P1Q2R1)
+        P2Q1R1 = 
+            (b -> P2Q2R1)
+            |~|
+            P2Q2R1
+            |~|
+            P1Q1R2
+        P2Q1R2 = 
+            ((b -> P2Q2R2)
+            |~|
+            P2Q2R2)
+            []
+            (f -> P2Q1R1)
+        P2Q2R1 = 
+            P1Q2R2
+            |~|
+            P2Q1R2
+        P2Q2R2 = 
+            (f -> P2Q2R1)
+    within
+        P1Q1R1
+
+assert SystemH [T= SpecIII
+assert SpecIII [T= SystemH 
+assert SystemH [FD= SpecIII
+assert SpecIII [FD= SystemH
