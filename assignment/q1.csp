@@ -37,7 +37,7 @@ PQ =
         P1Q1 = 
             (a -> P2Q1)
             []
-            ((a -> P2Q1)
+            (STOP
             |~|
             (b -> P1Q2))
         P1Q2 = 
@@ -69,13 +69,13 @@ PQR =
         P1Q1R1 = 
             (a -> P2Q1R1)
             []
-            ((a -> P2Q1R1) 
+            (STOP 
             |~|
             (b -> P1Q2R1))
         P1Q1R2 = 
             (a -> P2Q1R2)
             []
-            ((a -> P2Q1R2) 
+            (STOP
             |~|
             (b -> P1Q2R2))
             []
@@ -149,25 +149,16 @@ assert SpecII [FD= SystemH
 -- (iii)
 
 Hidden = 
-     let
-        H1 = (a -> H9) [] (H2 |~| H13)
-        H2 = (a -> H3)
-        H3 = H4 |~| H7
-        H4 = (a -> H5) [] (f -> H2)
-        H5 = (f -> H3) [] (STOP |~| H6)
-        H6 = (f -> H7)
-        H7 = (STOP |~| H8)
-        H8 = (f -> H9) [] (STOP |~| H5)
-        H9 = H3 |~| H10 |~| H15
-        H10 = (a -> H8) [] (f -> H1) |~| H4 |~| H11
-        H11 = (a -> H12) [] (b -> H14) [] (f -> H13)
-        H12 = (b -> H6) [] (f -> H15)
-        H13 = (a -> H15) [] (b -> H16)
-        H14 = (a -> H6) [] (f -> H16)
-        H15 = (b -> H7) [] (STOP |~| H11)
-        H16 = (a -> H7) [] (STOP |~| H10)
+    let
+        S = (a -> H1) [] (STOP |~| AB)
+        A = (a -> F |~| AF)
+        F = (f -> F |~| AF)
+        AB = (a -> F) [] (b -> A)
+        AF = (a -> F) [] (f -> A)
+        BF = (b -> F) [] (f -> F)
+        ABF = (a -> BF) [] (b -> AF) [] (f -> AB)
     within
-        H1
+        S
 
 assert SystemH [T= Hidden
 assert Hidden [T= SystemH 
