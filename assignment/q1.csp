@@ -150,15 +150,48 @@ assert SpecII [FD= SystemH
 
 Hidden = 
     let
-        S = (a -> H1) [] (STOP |~| AB)
-        A = (a -> F |~| AF)
-        F = (f -> F |~| AF)
-        AB = (a -> F) [] (b -> A)
-        AF = (a -> F) [] (f -> A)
-        BF = (b -> F) [] (f -> F)
-        ABF = (a -> BF) [] (b -> AF) [] (f -> AB)
+        P1Q1R1 = 
+            (a -> P2Q1R1)
+            []
+            (STOP |~| (b -> P1Q2R1))
+        P1Q1R2 = 
+            (a -> P2Q1R2)
+            []
+            (STOP |~| (b -> P1Q2R2))
+            []
+            (f -> P1Q1R1)
+        P1Q2R1 = 
+            (a -> P2Q2R1)
+            []
+            (STOP |~| P1Q1R2)
+        P1Q2R2 = 
+            (a -> (f -> P2Q2R1))
+            []
+            (f -> P1Q2R1)
+        P2Q1R1 = 
+            ((b -> P2Q2R1)
+            |~|
+            (STOP |~| P2Q2R1))
+            []
+            (STOP |~| P1Q1R2)
+        P2Q1R2 = 
+            ((b -> (f -> P2Q2R1))
+            |~|
+            (STOP |~| (f -> P2Q2R1)))
+            []
+            (f -> P2Q1R1)
+        P2Q2R1 =
+            (a -> (f -> P2Q2R1))
+            []
+            (f -> P1Q2R1)
+            |~|
+            ((b -> (f -> P2Q2R1))
+            |~|
+            (STOP |~| (f -> P2Q2R1)))
+            []
+            (STOP |~| (f -> P2Q1R1))
     within
-        S
+        P1Q1R1
 
 assert SystemH [T= Hidden
 assert Hidden [T= SystemH 
