@@ -148,52 +148,28 @@ assert SpecII [FD= SystemH
 
 -- (iii)
 
-SpecIII = 
+Hidden = 
      let
-        P1Q1R1 = 
-            (a -> P2Q1R1)
-            []
-            ((a -> P2Q1R1) 
-            |~|
-            (b -> P1Q2R1))
-        P1Q1R2 = 
-            (a -> P2Q1R2)
-            []
-            ((a -> P2Q1R2) 
-            |~|
-            (b -> P1Q2R2))
-            []
-            (f -> P1Q1R1)
-        P1Q2R1 = 
-            (a -> P2Q2R1)
-            |~|
-            P1Q1R2
-        P1Q2R2 = 
-            (a -> P2Q2R2)
-            []
-            (f -> P1Q2R1)
-        P2Q1R1 = 
-            (b -> P2Q2R1)
-            |~|
-            P2Q2R1
-            |~|
-            P1Q1R2
-        P2Q1R2 = 
-            ((b -> P2Q2R2)
-            |~|
-            P2Q2R2)
-            []
-            (f -> P2Q1R1)
-        P2Q2R1 = 
-            P1Q2R2
-            |~|
-            P2Q1R2
-        P2Q2R2 = 
-            (f -> P2Q2R1)
+        H1 = (a -> H9) [] (H2 |~| H13)
+        H2 = (a -> H3)
+        H3 = H4 |~| H7
+        H4 = (a -> H5) [] (f -> H2)
+        H5 = (f -> H3) [] (STOP |~| H6)
+        H6 = (f -> H7)
+        H7 = (STOP |~| H8)
+        H8 = (f -> H9) [] (STOP |~| H5)
+        H9 = H3 |~| H10 |~| H15
+        H10 = (a -> H8) [] (f -> H1) |~| H4 |~| H11
+        H11 = (a -> H12) [] (b -> H14) [] (f -> H13)
+        H12 = (b -> H6) [] (f -> H15)
+        H13 = (a -> H15) [] (b -> H16)
+        H14 = (a -> H6) [] (f -> H16)
+        H15 = (b -> H7) [] (STOP |~| H11)
+        H16 = (a -> H7) [] (STOP |~| H10)
     within
-        P1Q1R1
+        H1
 
-assert SystemH [T= SpecIII
-assert SpecIII [T= SystemH 
-assert SystemH [FD= SpecIII
-assert SpecIII [FD= SystemH
+assert SystemH [T= Hidden
+assert Hidden [T= SystemH 
+assert SystemH [FD= Hidden
+assert Hidden [FD= SystemH
