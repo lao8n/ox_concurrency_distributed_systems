@@ -152,7 +152,7 @@ Hidden =
             (STOP |~| (b -> P1Q2R1))
         P1Q1R2 = 
             (a -> P2Q1R2)
-            []
+            |~|
             (b -> P1Q2R2)
             []
             (f -> P1Q1R1)
@@ -177,7 +177,15 @@ Hidden =
             []
             (f -> P2Q1R1)
         P2Q2R1 = 
-            P1Q2R2 |~| P2Q1R2
+            (a -> P2Q2R2)
+            []
+            (f -> P1Q2R1)
+            |~|
+            ((b -> P2Q2R2)
+            |~| 
+            P2Q2R2)
+            []
+            (f -> P2Q1R1)
         P2Q2R2 = 
             (f -> P2Q2R1)
     within
