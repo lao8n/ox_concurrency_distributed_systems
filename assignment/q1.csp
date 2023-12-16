@@ -146,50 +146,64 @@ assert SpecII [FD= SystemH
 
 Hidden = 
     let
-        P1Q1R1 = 
-            (a -> P2Q1R1)
+        S = 
+            (a -> H1)
             []
-            (STOP |~| (b -> P1Q2R1))
-        P1Q1R2 = 
-            (a -> P2Q1R2)
-            |~|
-            (b -> P1Q2R2)
+            ((a -> H2)
+            |~|    
+            AB)
+        A = 
+            (a -> H3)
             []
-            (f -> P1Q1R1)
-        P1Q2R1 = 
-            (a -> P2Q2R1)
+            (STOP |~| AF3)
+        B = 
+            (b -> H3)
             []
-            (STOP |~| P1Q1R2)
-        P1Q2R2 = 
-            (a -> P2Q2R2)
+            (STOP |~| ABF)       
+        F = 
+            (f -> H1)
             []
-            (f -> P1Q2R1)
-        P2Q1R1 = 
-            ((b -> P2Q2R1)
-            |~| 
-            P2Q2R1)
+            (BF |~| H4)
+        AB = 
+            (a -> B)
             []
-            (STOP |~| P1Q1R2)
-        P2Q1R2 = 
-            ((b -> P2Q2R2)
-            |~| 
-            P2Q2R2)
+            (b -> A)
+        BF =
+            (b -> f -> H3)
             []
-            (f -> P2Q1R1)
-        P2Q2R1 = 
-            (a -> P2Q2R2)
+            (f -> B)
+        AF1 = 
+            (f -> a -> H2)
             []
-            (f -> P1Q2R1)
-            |~|
-            ((b -> P2Q2R2)
-            |~| 
-            P2Q2R2)
+            (a -> H4)
+        AF2 = 
+            (a -> f -> H3)
             []
-            (f -> P2Q1R1)
-        P2Q2R2 = 
-            (f -> P2Q2R1)
+            (f -> A)
+        AF3 = 
+            (a -> F)
+            []
+            (f -> S)
+            []
+            (AF1 |~| ABF)
+        ABF = 
+            (a -> BF)
+            []
+            (b -> AF2)
+            []
+            (f -> AB)
+        H1 = 
+            H2 |~| AF3 |~| B
+        H2 = 
+            AF1 |~| H3
+        H3 = 
+            F |~| AF2
+        H4 = 
+            (f -> H2)
+            []
+            (STOP |~| (f -> H3))
     within
-        P1Q1R1
+        S
 
 assert SystemH [T= Hidden
 assert Hidden [T= SystemH 
