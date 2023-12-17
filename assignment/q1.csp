@@ -146,40 +146,125 @@ assert SpecII [FD= SystemH
 
 Hidden = 
     let
-        S = 
-            (a -> H1)
+        P1Q1R1 = 
+            (a -> P2Q1R1)
             []
-            (A |~| AB)
-        A = 
-            (a -> F |~| AF)
-        B = 
-            (b -> (F |~| AF) [] (STOP |~| ABF))
-        F = 
-            (f -> F |~| AF)
-        AB = 
-            (a -> B)
+            (STOP |~| (b -> P1Q2R1))
+        P1Q1R2 = 
+            (a -> P2Q1R2)
+            |~|
+            (b -> P1Q2R2)
             []
-            (b -> (A [] (AF |~| ABF)))
-        AF = 
-            (a -> F)
+            (f -> P1Q1R1)
+        P1Q2R1 = 
+            (a -> P2Q2R1)
             []
-            (f -> A)
-        BF = 
-            (b -> F)
+            (STOP |~| P1Q1R2)
+        P1Q2R2 = 
+            (a -> P2Q2R2)
             []
-            (f -> B)
-        ABF = 
-            (a -> BF)
+            (f -> P1Q2R1)
+        P2Q1R1 = 
+            ((b -> P2Q2R1)
+            |~| 
+            P2Q2R1)
             []
-            (b -> AF)
+            (STOP |~| P1Q1R2)
+        P2Q1R2 = 
+            ((b -> P2Q2R2)
+            |~| 
+            P2Q2R2)
             []
-            (f -> AB)
-        H1 = 
-            B |~| (AF |~| ABF) |~| (AF |~| (F |~| AF))
+            (f -> P2Q1R1)
+        P2Q2R1 = 
+            (a -> P2Q2R2)
+            []
+            (f -> P1Q2R1)
+            |~|
+            ((b -> P2Q2R2)
+            |~| 
+            P2Q2R2)
+            []
+            (f -> P2Q1R1)
+        P2Q2R2 = 
+            (f -> P2Q2R1)
     within
-        S
+        P1Q1R1
 
-assert Hidden [T= SystemH
 assert SystemH [T= Hidden
-assert Hidden [FD= SystemH
+assert Hidden [T= SystemH 
 assert SystemH [FD= Hidden
+assert Hidden [FD= SystemH
+
+-- (iii) attempt with hidden definition but doesn't compile
+
+PH = 
+    let 
+        P1H = a -> P2H
+        P2H = (P1H |~| P2H)
+    within 
+        P1H
+
+QH = 
+    let 
+        Q1H = (b -> Q2H) |~| Q2H
+        Q2H = (STOP |~| Q1H)
+    within
+        Q1H
+
+RH =
+    let 
+        R1H = (R1H |~| R2H)
+        R2H = (f -> R1H)
+    within 
+        R1H
+
+HiddenAtt = 
+    let
+        P1Q1R1H =
+            (a -> P2Q1R1H)
+            []
+            ((b -> P1Q2R1H)
+             |~|
+             P1Q2R1H)
+            []
+            (P1Q1R1H |~| P1Q1R2H)
+        P1Q1R2H = 
+            (a -> P2Q1R2H) 
+            []
+            ((b -> P1Q2R2H)
+             |~|
+             P1Q2R2H)
+            []
+            (f -> P1Q1R2H)    
+        P1Q2R1H =
+            (a -> P2Q2R1H)
+            []
+            (P1Q1R1H |~| P1Q2R1H |~| P1Q2R2H)
+        P1Q2R2H = 
+            (a -> P2Q2R2H)
+            []
+            (STOP |~| P1Q1R2H)
+            []
+            (f -> P1Q1R1H)
+        P2Q1R1H = 
+            (P1Q1R1H |~| P2Q1R1H |~| P2Q1R1H |~| P2Q1R2H)
+            []
+            ((b -> P2Q2R1H) |~| P2Q2R1H)
+        P2Q1R2H = 
+            (P1Q1R2H |~| P2Q1R2H |~| P2Q1R1H |~| P2Q1R2H)
+            []
+            ((b -> P2Q2R2H) |~| P2Q2R2H)
+        P2Q2R1H = 
+            (P1Q2R1H |~| P2Q2R1H |~| P2Q1R1H |~| P2Q2R1H |~| P2Q2R2H)
+        P2Q2R2H =
+            (P1Q2R2H |~| P2Q2R2H |~| P2Q1R2H)
+            []
+            (f -> P2Q2R1H)
+    within
+        P1Q1R1H 
+
+assert SystemH [T= HiddenAtt
+assert HiddenAtt [T= SystemH 
+assert SystemH [FD= HiddenAtt
+assert HiddenAtt [FD= SystemH

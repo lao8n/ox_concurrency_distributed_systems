@@ -1,0 +1,126 @@
+datatype Place = a | b
+
+Friend = {1..4}
+Three = {1..3}
+
+channel prefer : Friend . Place
+channel propose : Friend . Friend . Place
+channel goto : Friend . Place
+
+Good(i) =
+    let
+        Others = diff(Three,{i})
+
+        Start =
+            prefer.i.a -> Propose(a,Others,1,0)
+            |~|
+            prefer.i.b -> Propose(b,Others,0,1)
+
+        Propose(p,S,A,B) =
+            ( [] j : S @ propose.i.j.p ->
+            Propose(p,diff(S,{j}),A,B) )
+            []
+            ( A + B <= 3 & [] j : Others @ propose.j.i.a ->
+            Propose(p,S,A+1,B) )
+            []
+            ( A + B <= 3 & [] j : Others @ propose.j.i.b ->
+            Propose(p,S,A,B+1) )
+            []
+            A >= 2 & goto.i.a -> STOP
+            []
+            B >= 2 & goto.i.b -> STOP
+    within
+        Start
+
+proposals(i) =
+    union ( {| propose.i |}, {| propose.j.i | j <- Friend |} )
+Alpha(i) =
+    union ( proposals(i), {| prefer.i, goto.i |} )
+Evening =
+    || i : Three @ [ Alpha(i) ] Good(i)
+
+-- (a)
+
+success(p) = 
+    ||| i : Three @ goto.i.p -> STOP
+
+Success = 
+    success(a)
+    |~|
+    success(b)       
+
+assert Success [FD= Evening \ {| prefer, propose |}
+
+assert Evening :[deadlock free]
+
+-- (b)
+
+Good2(i) =
+    let
+        Others = diff(Three,{i})
+
+        Start =
+            prefer.i.a -> Propose(a,Others,1,0)
+            |~|
+            prefer.i.b -> Propose(b,Others,0,1)
+
+        Propose(p,S,A,B) =
+            ( [] j : S @ propose.i.j.p ->
+            Propose(p,diff(S,{j}),A,B) )
+            []
+            ( A + B <= 3 & [] j : Others @ propose.j.i.a ->
+            Propose(p,S,A+1,B) )
+            []
+            ( A + B <= 3 & [] j : Others @ propose.j.i.b ->
+            Propose(p,S,A,B+1) )
+            []
+            empty(S) & A + B == 3 & A >= 2 & goto.i.a -> STOP
+            []
+            empty(S) & A + B == 3 & B >= 2 & goto.i.b -> STOP
+    within
+        Start
+
+Evening2 =
+    || i : Three @ [ Alpha(i) ] Good2(i)  
+
+assert Success [FD= Evening2 \ {| prefer, propose |}
+
+-- (c)
+
+Good3(i) =
+    let
+        Others = diff(Friend,{i})
+
+        Start =
+            prefer.i.a -> Propose(a,Others,1,0)
+            |~|
+            prefer.i.b -> Propose(b,Others,0,1)
+
+        Propose(p,S,A,B) =
+            ( [] j : S @ propose.i.j.p ->
+            Propose(p,diff(S,{j}),A,B) )
+            []
+            ( A + B <= 4 & [] j : Others @ propose.j.i.a ->
+            Propose(p,S,A+1,B) )
+            []
+            ( A + B <= 4 & [] j : Others @ propose.j.i.b ->
+            Propose(p,S,A,B+1) )
+            []
+            empty(S) & A + B == 4 & A >= 3 & goto.i.a -> STOP
+            []
+            empty(S) & A + B == 4 & B >= 3 & goto.i.b -> STOP
+    within
+        Start
+
+Evening3 =
+    || i : Friend @ [ Alpha(i) ] Good3(i)  
+
+success3(p) = 
+    ||| i : Friend @ goto.i.p -> STOP
+
+Success3 = 
+    success3(a)
+    |~|
+    success3(b)     
+
+assert Success3 [FD= Evening3 \ {| prefer, propose |}
