@@ -127,8 +127,6 @@ assert Success3 [FD= Evening3 \ {| prefer, propose |}
 
 channel declare : Friend . Friend . Place
 
-
-
 Good4(i) =
     let
         Others = diff(Friend,{i})
@@ -155,15 +153,15 @@ Good4(i) =
             (empty(S) & A + B == 4 & B >= 3 & goto.i.b -> STOP)
             []
             -- send declaration
-            ( empty(S) & A == 2 & B == 2 & i == 1 & [] j : D @ declare.i.j.p ->
+            ( i == 1 & A == 2 & B == 2 & [] j : D @ declare.i.j.p ->
             Propose(p,S,A,B,diff(D,{j}))) 
             []
-            (A == 2 & B == 2 & i == 1 & empty(S) & empty(D) & goto.i.p -> STOP)
+            ( i == 1 & empty(D) & goto.i.p -> STOP)
             []
             -- receive declarations
-            ( empty(S) & A == 2 & B == 2 & i != 1 & declare.1.i.a -> goto.i.a -> STOP)
+            ( i != 1 & declare.1.i.a -> goto.i.a -> STOP)
             []
-            ( empty(S) & A == 2 & B == 2 & i != 1 & declare.1.i.b -> goto.i.b -> STOP)
+            ( i != 1 & declare.1.i.b -> goto.i.b -> STOP)
     within
         Start
 
@@ -184,3 +182,134 @@ Success4 =
     success4(b)     
 
 assert Success4 [FD= Evening4 \ {| prefer, propose, declare |}
+
+-- (e)
+
+Okay5(i) =
+    let
+        MissingFriend = {1, 2}
+        Others = diff(Friend,{i})
+        Start =
+            prefer.i.a -> Propose(a,MissingFriend,1,0,Others)
+            |~|
+            prefer.i.b -> Propose(b,MissingFriend,0,1,Others)
+
+        Propose(p,S,A,B,D) =
+            -- send proposals
+            ( [] j : S @ propose.i.j.p -> 
+            Propose(p,diff(S,{j}),A,B,D))
+            []
+            -- receive proposals
+            ( A + B < 4 & [] j : Others @ propose.j.i.a ->
+            Propose(p,S,A+1,B,D) )
+            []
+            ( A + B < 4 & [] j : Others @ propose.j.i.b ->
+            Propose(p,S,A,B+1,D) )
+            []
+            -- go to destination
+            (empty(S) & A + B == 4 & A >= 3 & goto.i.a -> STOP)
+            []
+            (empty(S) & A + B == 4 & B >= 3 & goto.i.b -> STOP)
+            []
+            -- send declaration
+            ( i == 1 & A == 2 & B == 2 & [] j : D @ declare.i.j.p ->
+            Propose(p,S,A,B,diff(D,{j}))) 
+            []
+            ( i == 1 & empty(D) & goto.i.p -> STOP)
+            []
+            -- receive declarations
+            ( i != 1 & declare.1.i.a -> goto.i.a -> STOP)
+            []
+            ( i != 1 & declare.1.i.b -> goto.i.b -> STOP)
+    within
+        Start
+
+Evening5 =
+    || i : Friend @ [ Alpha4(i) ] if i == 4 then Okay5(i) else Good4(i)
+
+success5(p) = 
+    ||| i : Friend @ goto.i.p -> STOP
+Success5 = 
+    success5(a)
+    |~|
+    success5(b)     
+
+assert Success5 [FD= Evening5 \ {| prefer, propose, declare |}
+
+-- (f)
+
+Good6(i) =
+    let
+        Others = diff(Friend,{i})
+        Start =
+            prefer.i.a -> Propose(a,Others,1,0,Others)
+            |~|
+            prefer.i.b -> Propose(b,Others,0,1,Others)
+
+        Propose(p,S,A,B,D) =
+            -- send proposals
+            ( [] j : S @ propose.i.j.p ->
+            Propose(p,diff(S,{j}),A,B,D) )
+            []
+            -- receive proposals
+            ( A + B < 4 & [] j : Others @ propose.j.i.a ->
+            Propose(p,S,A+1,B,D) )
+            []
+            ( A + B < 4 & [] j : Others @ propose.j.i.b ->
+            Propose(p,S,A,B+1,D) )
+            []
+            -- go to destination
+            (empty(S) & A + B == 4 & A >= 3 & goto.i.a -> STOP)
+            []
+            (empty(S) & A + B == 4 & B >= 3 & goto.i.b -> STOP)
+            []
+            -- send declaration
+            ( i == 1 & A == 2 & B == 2 & [] j : D @ declare.i.j.p ->
+            Propose(p,S,A,B,diff(D,{j}))) 
+            []
+            ( i == 1 & empty(D) & goto.i.p -> STOP)
+            []
+            -- receive declarations
+            ( i != 1 & declare.1.i.a -> goto.i.a -> STOP)
+            []
+            ( i != 1 & declare.1.i.b -> goto.i.b -> STOP)
+    within
+        Start
+
+Okay6(i) =
+    let
+        Others = diff(Friend,{i})
+        Start =
+            prefer.i.a -> Propose(a,Others,1,0,Others)
+            |~|
+            prefer.i.b -> Propose(b,Others,0,1,Others)
+
+        Propose(p,S,A,B,D) =
+            -- send proposals
+            ( [] j : S @ (Propose(p,diff(S,{j}),A,B,D)) |~|
+            (propose.i.j.p -> Propose(p,diff(S,{j}),A,B,D)) )
+            []
+            -- receive proposals
+            ( A + B < 4 & [] j : Others @ propose.j.i.a ->
+            Propose(p,S,A+1,B,D) )
+            []
+            ( A + B < 4 & [] j : Others @ propose.j.i.b ->
+            Propose(p,S,A,B+1,D) )
+            []
+            -- go to destination
+            (empty(S) & A + B == 4 & A >= 3 & goto.i.a -> STOP)
+            []
+            (empty(S) & A + B == 4 & B >= 3 & goto.i.b -> STOP)
+            []
+            -- send declaration
+            ( i == 1 & A == 2 & B == 2 & [] j : D @ declare.i.j.p ->
+            Propose(p,S,A,B,diff(D,{j}))) 
+            []
+            ( i == 1 & empty(D) & goto.i.p -> STOP)
+            []
+            -- receive declarations
+            ( i != 1 & declare.1.i.a -> goto.i.a -> STOP)
+            []
+            ( i != 1 & declare.1.i.b -> goto.i.b -> STOP)
+    within
+        Start
