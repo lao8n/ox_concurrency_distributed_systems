@@ -43,7 +43,6 @@ Evening =
 
 success(p) = 
     ||| i : Three @ goto.i.p -> STOP
-
 Success = 
     success(a)
     |~|
@@ -117,10 +116,71 @@ Evening3 =
 
 success3(p) = 
     ||| i : Friend @ goto.i.p -> STOP
-
 Success3 = 
     success3(a)
     |~|
     success3(b)     
 
 assert Success3 [FD= Evening3 \ {| prefer, propose |}
+
+-- (d)
+
+channel declare : Friend . Friend . Place
+
+
+
+Good4(i) =
+    let
+        Others = diff(Friend,{i})
+        Start =
+            prefer.i.a -> Propose(a,Others,1,0,Others)
+            |~|
+            prefer.i.b -> Propose(b,Others,0,1,Others)
+
+        Propose(p,S,A,B,D) =
+            -- send proposals
+            ( [] j : S @ propose.i.j.p ->
+            Propose(p,diff(S,{j}),A,B,D) )
+            []
+            -- receive proposals
+            ( A + B < 4 & [] j : Others @ propose.j.i.a ->
+            Propose(p,S,A+1,B,D) )
+            []
+            ( A + B < 4 & [] j : Others @ propose.j.i.b ->
+            Propose(p,S,A,B+1,D) )
+            []
+            -- go to destination
+            (empty(S) & A + B == 4 & A >= 3 & goto.i.a -> STOP)
+            []
+            (empty(S) & A + B == 4 & B >= 3 & goto.i.b -> STOP)
+            []
+            -- send declaration
+            ( empty(S) & A == 2 & B == 2 & i == 1 & [] j : D @ declare.i.j.p ->
+            Propose(p,S,A,B,diff(D,{j}))) 
+            []
+            (A == 2 & B == 2 & i == 1 & empty(S) & empty(D) & goto.i.p -> STOP)
+            []
+            -- receive declarations
+            ( empty(S) & A == 2 & B == 2 & i != 1 & declare.1.i.a -> goto.i.a -> STOP)
+            []
+            ( empty(S) & A == 2 & B == 2 & i != 1 & declare.1.i.b -> goto.i.b -> STOP)
+    within
+        Start
+
+proposals4(i) =
+    union ( {| propose.i |}, {| propose.j.i | j <- Friend |} )
+declarations(i) = 
+    union ( {| declare.i |}, {| declare.j.i | j <- Friend |} )
+Alpha4(i) =
+    union ( union( proposals4(i), declarations(i)) , {| prefer.i, goto.i |} )
+Evening4 =
+    || i : Friend @ [ Alpha4(i) ] Good4(i)  
+
+success4(p) = 
+    ||| i : Friend @ goto.i.p -> STOP
+Success4 = 
+    success4(a)
+    |~|
+    success4(b)     
+
+assert Success4 [FD= Evening4 \ {| prefer, propose, declare |}
