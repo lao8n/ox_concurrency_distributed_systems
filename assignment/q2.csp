@@ -238,6 +238,10 @@ assert Success5 [FD= Evening5 \ {| prefer, propose, declare |}
 
 -- (f)
 
+Time = {5..7}
+
+channel time : Friend . Time
+
 Good6(i) =
     let
         Others = diff(Friend,{i})
@@ -278,16 +282,17 @@ Good6(i) =
 
 Okay6(i) =
     let
+        MissingFriend = {1, 2}
         Others = diff(Friend,{i})
         Start =
-            prefer.i.a -> Propose(a,Others,1,0,Others)
+            prefer.i.a -> Propose(a,MissingFriend,1,0,Others)
             |~|
-            prefer.i.b -> Propose(b,Others,0,1,Others)
+            prefer.i.b -> Propose(b,MissingFriend,0,1,Others)
 
         Propose(p,S,A,B,D) =
             -- send proposals
-            ( [] j : S @ (Propose(p,diff(S,{j}),A,B,D)) |~|
-            (propose.i.j.p -> Propose(p,diff(S,{j}),A,B,D)) )
+            ( [] j : S @ propose.i.j.p -> 
+            Propose(p,diff(S,{j}),A,B,D))
             []
             -- receive proposals
             ( A + B < 4 & [] j : Others @ propose.j.i.a ->
@@ -313,3 +318,32 @@ Okay6(i) =
             ( i != 1 & declare.1.i.b -> goto.i.b -> STOP)
     within
         Start
+
+Time6(start) = 
+    let
+        Time(S, t) = 
+            ([] j : S @ time.j.t -> Time(diff(S,{j}), t))
+            []
+            ((empty(S) & t < 7) -> Time(Friend, t + 1))
+            []
+            (empty(S) & t == 7 -> STOP)
+    within
+        Time(Friend, start)
+
+timeAlpha(i) =
+    union ( {| propose.i |}, {| propose.i.t | t <- Time |})
+Alpha6(i) =
+    union ( union( proposals4(i), declarations(i)) , {| prefer.i, goto.i |} )
+Evening6(t) =
+    || i : Friend @ [ Alpha6(i) ] (
+        if i == 4 then Okay6(i) [|timeAlpha(i)|] Time6(t) 
+        else Good6(i) [|timeAlpha(i)|] Time6(t))
+
+success6(p) = 
+    ||| i : Friend @ goto.i.p -> STOP
+Success6 = 
+    success6(a)
+    |~|
+    success6(b)     
+
+assert Success6 [FD= Evening6(5) \ {| prefer, propose, declare |}
