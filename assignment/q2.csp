@@ -252,20 +252,20 @@ Good6(i) =
 
         Propose(p,S,A,B,D,T) =
             -- send proposals
-            ( [] j : S @ propose.i.j.p ->
+            ( T < 6 & [] j : S @ propose.i.j.p ->
             Propose(p,diff(S,{j}),A,B,D,T) )
             []
             -- receive proposals
-            ( A + B < 4 & [] j : Others @ propose.j.i.a ->
+            ( T < 6 & A + B < 4 & [] j : Others @ propose.j.i.a ->
             Propose(p,S,A+1,B,D,T) )
             []
-            ( A + B < 4 & [] j : Others @ propose.j.i.b ->
+            ( T < 6 & A + B < 4 & [] j : Others @ propose.j.i.b ->
             Propose(p,S,A,B+1,D,T) )
             []
             -- go to destination
-            ( empty(S) & A + B == 4 & A >= 3 & goto.i.a -> STOP)
+            (T == 7 & empty(S) & A + B == 4 & A >= 3 & goto.i.a -> STOP)
             []
-            ( empty(S) & A + B == 4 & B >= 3 & goto.i.b -> STOP)
+            (T == 7 & empty(S) & A + B == 4 & B >= 3 & goto.i.b -> STOP)
             []
             ( T == 7 & A >= 3 & goto.i.a -> STOP)
             []
@@ -278,15 +278,17 @@ Good6(i) =
             ( i == 1 & T == 6 & [] j : D @ declare.i.j.p -> 
             Propose(p,S,A,B,diff(D,{j}),T))
             []
-            ( i == 1 & empty(D) & goto.i.p -> STOP)
+            (T == 7 & i == 1 & empty(D) & goto.i.p -> STOP)
             []
             -- receive declarations
-            ( i != 1 & declare.1.i.a -> goto.i.a -> STOP)
+            (T == 7 & i != 1 & declare.1.i.a -> goto.i.a -> STOP)
             []
-            ( i != 1 & declare.1.i.b -> goto.i.b -> STOP)
+            (T == 7 & i != 1 & declare.1.i.b -> goto.i.b -> STOP)
             []
             -- receive time
-            ( [] t : Time @ time.i.t -> Propose(p, S, A, B, D, t))
+            (T == 5 & time.i.6 -> Propose(p, S, A, B, D, 6))
+            []
+            (T == 6 & time.i.7 -> Propose(p, S, A, B, D, 7))
     within
         Start
 
@@ -301,20 +303,20 @@ Okay6(i) =
 
         Propose(p,S,A,B,D,T) =
             -- send proposals
-            ( [] j : S @ propose.i.j.p -> 
+            ( T < 6 & [] j : S @ propose.i.j.p -> 
             Propose(p,diff(S,{j}),A,B,D,T))
             []
             -- receive proposals
-            ( A + B < 4 & [] j : Others @ propose.j.i.a ->
+            (  T < 6 & A + B < 4 & [] j : Others @ propose.j.i.a ->
             Propose(p,S,A+1,B,D,T) )
             []
-            ( A + B < 4 & [] j : Others @ propose.j.i.b ->
+            (  T < 6 & A + B < 4 & [] j : Others @ propose.j.i.b ->
             Propose(p,S,A,B+1,D,T) )
             []
             -- go to destination
-            (empty(S) & A + B == 4 & A >= 3 & goto.i.a -> STOP)
+            (T == 7 & empty(S) & A + B == 4 & A >= 3 & goto.i.a -> STOP)
             []
-            (empty(S) & A + B == 4 & B >= 3 & goto.i.b -> STOP)
+            (T == 7 & empty(S) & A + B == 4 & B >= 3 & goto.i.b -> STOP)
             []
             (T == 7 & A >= 3 & goto.i.a -> STOP)
             []
@@ -322,12 +324,14 @@ Okay6(i) =
             []
             -- remove send declaration as okay never friend 1
             -- receive declarations
-            ( i != 1 & declare.1.i.a -> goto.i.a -> STOP)
+            (T == 7 & i != 1 & declare.1.i.a -> goto.i.a -> STOP)
             []
-            ( i != 1 & declare.1.i.b -> goto.i.b -> STOP)
+            ( T == 7 & i != 1 & declare.1.i.b -> goto.i.b -> STOP)
             []
             -- receive time
-            ( [] t : Time @ time.i.t -> Propose(p, S, A, B, D, t))
+            (T == 5 & time.i.6 -> Propose(p, S, A, B, D, 6))
+            []
+            (T == 6 & time.i.7 -> Propose(p, S, A, B, D, 7))
     within
         Start
 
@@ -342,20 +346,29 @@ Time6(start) =
     within
         Time(Friend, start)
 
-timeAlpha(i) =
-    union ( {| time.i |}, {| time.i.t | t <- Time |})
+timeAlpha =
+    {| time.i.t | i <-Friend, t <- Time |}
+propDecl(i) = 
+    union( proposals4(i), declarations(i))
 Alpha6(i) =
-    union ( union( proposals4(i), declarations(i)) , {| prefer.i, goto.i |} )
+    union ( propDecl(i) , {| prefer.i, goto.i |} )
 Evening6(t) =
-    || i : Friend @ [ Alpha6(i) ] (
-        if i == 4 then Okay6(i) [|timeAlpha(i)|] Time6(t) 
-        else Good6(i) [|timeAlpha(i)|] Time6(t))
+    (|| i : Friend @ [ Alpha6(i)] ( 
+        if i == 4 then Okay6(i) else Good6(i) )) [|timeAlpha|] Time6(t)
 
-success6(p) = 
-    ||| i : Friend @ goto.i.p -> STOP
-Success6 = 
-    success6(a)
+Success6P(i, p, T) = 
+    ( T == 7 & goto.i.p -> STOP)
+    []
+    ( T == 5 & time.i.6 -> Success6P(i, p, 6))
+    []
+    ( T == 6 & time.i.7 -> Success6P(i, p, 7))
+success6(p, T) = 
+    ||| i : Friend @ Success6P(i, p, T)
+Success6(t) = 
+    (success6(a,t)
     |~|
-    success6(b)     
+    success6(b,t))
+    [|timeAlpha|] Time6(t)  
 
-assert Success6 [FD= Evening6(5) \ {| prefer, propose, declare, time |}
+t = 6
+assert Success6(t) [FD= Evening6(t) \ {| prefer, propose, declare |}
