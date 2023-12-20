@@ -286,9 +286,7 @@ Good6(i) =
             ( i != 1 & declare.1.i.b -> goto.i.b -> STOP)
             []
             -- receive time
-            ( T == 5 & time.i.6 -> Propose(p, S, A, B, D, 6))
-            []
-            ( T == 6 & time.i.7 -> Propose(p, S, A, B, D, 7))
+            ( [] t : Time @ time.i.t -> Propose(p, S, A, B, D, t))
     within
         Start
 
@@ -338,14 +336,14 @@ Time6(start) =
         Time(S, t) = 
             ([] j : S @ time.j.t -> Time(diff(S,{j}), t))
             []
-            ((empty(S) & t < 7) -> Time(Friend, t + 1))
+            (empty(S) & t < 7 & time.1.(t+1)-> Time(diff(Friend,{1}), t+1))
             []
-            (empty(S) & t == 7 -> STOP)
+            (empty(S) & t == 7 & STOP)
     within
         Time(Friend, start)
 
 timeAlpha(i) =
-    union ( {| propose.i |}, {| propose.i.t | t <- Time |})
+    union ( {| time.i |}, {| time.i.t | t <- Time |})
 Alpha6(i) =
     union ( union( proposals4(i), declarations(i)) , {| prefer.i, goto.i |} )
 Evening6(t) =
@@ -360,4 +358,4 @@ Success6 =
     |~|
     success6(b)     
 
-assert Success6 [FD= Evening6(5) \ {| prefer, propose, declare |}
+assert Success6 [FD= Evening6(5) \ {| prefer, propose, declare, time |}
