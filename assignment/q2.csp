@@ -246,30 +246,37 @@ Good6(i) =
     let
         Others = diff(Friend,{i})
         Start =
-            prefer.i.a -> Propose(a,Others,1,0,Others)
+            prefer.i.a -> Propose(a,Others,1,0,Others,5)
             |~|
-            prefer.i.b -> Propose(b,Others,0,1,Others)
+            prefer.i.b -> Propose(b,Others,0,1,Others,5)
 
-        Propose(p,S,A,B,D) =
+        Propose(p,S,A,B,D,T) =
             -- send proposals
             ( [] j : S @ propose.i.j.p ->
-            Propose(p,diff(S,{j}),A,B,D) )
+            Propose(p,diff(S,{j}),A,B,D,T) )
             []
             -- receive proposals
             ( A + B < 4 & [] j : Others @ propose.j.i.a ->
-            Propose(p,S,A+1,B,D) )
+            Propose(p,S,A+1,B,D,T) )
             []
             ( A + B < 4 & [] j : Others @ propose.j.i.b ->
-            Propose(p,S,A,B+1,D) )
+            Propose(p,S,A,B+1,D,T) )
             []
             -- go to destination
-            (empty(S) & A + B == 4 & A >= 3 & goto.i.a -> STOP)
+            ( empty(S) & A + B == 4 & A >= 3 & goto.i.a -> STOP)
             []
-            (empty(S) & A + B == 4 & B >= 3 & goto.i.b -> STOP)
+            ( empty(S) & A + B == 4 & B >= 3 & goto.i.b -> STOP)
+            []
+            ( T == 7 & A >= 3 & goto.i.a -> STOP)
+            []
+            ( T == 7 & B >= 3 & goto.i.b -> STOP)
             []
             -- send declaration
             ( i == 1 & A == 2 & B == 2 & [] j : D @ declare.i.j.p ->
-            Propose(p,S,A,B,diff(D,{j}))) 
+            Propose(p,S,A,B,diff(D,{j}),T)) 
+            []
+            ( i == 1 & T == 6 & [] j : D @ declare.i.j.p -> 
+            Propose(p,S,A,B,diff(D,{j}),T))
             []
             ( i == 1 & empty(D) & goto.i.p -> STOP)
             []
@@ -277,6 +284,11 @@ Good6(i) =
             ( i != 1 & declare.1.i.a -> goto.i.a -> STOP)
             []
             ( i != 1 & declare.1.i.b -> goto.i.b -> STOP)
+            []
+            -- receive time
+            ( T == 5 & time.i.6 -> Propose(p, S, A, B, D, 6))
+            []
+            ( T == 6 & time.i.7 -> Propose(p, S, A, B, D, 7))
     within
         Start
 
@@ -285,37 +297,39 @@ Okay6(i) =
         MissingFriend = {1, 2}
         Others = diff(Friend,{i})
         Start =
-            prefer.i.a -> Propose(a,MissingFriend,1,0,Others)
+            prefer.i.a -> Propose(a,MissingFriend,1,0,Others,5)
             |~|
-            prefer.i.b -> Propose(b,MissingFriend,0,1,Others)
+            prefer.i.b -> Propose(b,MissingFriend,0,1,Others,5)
 
-        Propose(p,S,A,B,D) =
+        Propose(p,S,A,B,D,T) =
             -- send proposals
             ( [] j : S @ propose.i.j.p -> 
-            Propose(p,diff(S,{j}),A,B,D))
+            Propose(p,diff(S,{j}),A,B,D,T))
             []
             -- receive proposals
             ( A + B < 4 & [] j : Others @ propose.j.i.a ->
-            Propose(p,S,A+1,B,D) )
+            Propose(p,S,A+1,B,D,T) )
             []
             ( A + B < 4 & [] j : Others @ propose.j.i.b ->
-            Propose(p,S,A,B+1,D) )
+            Propose(p,S,A,B+1,D,T) )
             []
             -- go to destination
             (empty(S) & A + B == 4 & A >= 3 & goto.i.a -> STOP)
             []
             (empty(S) & A + B == 4 & B >= 3 & goto.i.b -> STOP)
             []
-            -- send declaration
-            ( i == 1 & A == 2 & B == 2 & [] j : D @ declare.i.j.p ->
-            Propose(p,S,A,B,diff(D,{j}))) 
+            (T == 7 & A >= 3 & goto.i.a -> STOP)
             []
-            ( i == 1 & empty(D) & goto.i.p -> STOP)
+            (T == 7 & B >= 3 & goto.i.b -> STOP)
             []
+            -- remove send declaration as okay never friend 1
             -- receive declarations
             ( i != 1 & declare.1.i.a -> goto.i.a -> STOP)
             []
             ( i != 1 & declare.1.i.b -> goto.i.b -> STOP)
+            []
+            -- receive time
+            ( [] t : Time @ time.i.t -> Propose(p, S, A, B, D, t))
     within
         Start
 
