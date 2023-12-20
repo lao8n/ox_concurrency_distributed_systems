@@ -372,3 +372,30 @@ Success6(t) =
 
 t = 6
 assert Success6(t) [FD= Evening6(t) \ {| prefer, propose, declare |}
+
+Check6P(i, A, B, p, T) = 
+    ( T == 5 & time.i.6 -> Check6P(i, A, B, p, 6))
+    []
+    ( T == 6 & time.i.7 -> Check6P(i, A, B, p, 7))
+    []
+    ( T == 7 & A >= 3 & goto.i.a -> STOP)
+    []
+    ( T == 7 & B >= 3 & goto.i.b -> STOP)
+    []
+    ( T == 7 & A < 3 & B < 3 & goto.i.p -> STOP)
+    []
+    -- receive preferences
+    ( T < 7 & [] j : Friend @ prefer.j.a ->
+    Check6P(i, A + 1, B, p, T))
+    []
+    ( T < 7 & [] j : Friend @ prefer.j.b ->
+    Check6P(i, A, B + 1, p, T))
+check6(p, T) = 
+    ||| i : Friend @ Check6P(i, 0, 0, p, T)
+Check6(t) = 
+    (check6(a,t)
+    |~|
+    check6(b,t))
+    [|timeAlpha|] Time6(t)  
+
+assert Check6(t) [T= Evening6(t) \ {| propose, declare |}
