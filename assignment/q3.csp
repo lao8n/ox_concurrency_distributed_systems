@@ -1,0 +1,97 @@
+maxnum = 3
+Number = {0..maxnum - 1}
+
+datatype Letter = A | B
+datatype Name = P | Q | R
+
+channel enter, leave : Name
+channel ticket : Number
+channel next : Letter
+channel see : Number . Letter
+channel present, return : Letter . Name . Number
+channel serve : Letter . Name
+
+Ticket =
+    let
+        State(n) =
+            ticket!n -> State((n+1)%maxnum)
+    within
+        State(0)
+
+-- (b)
+
+Display = 
+    let
+        Blank = 
+            next.A -> Screen(0, A)
+            []
+            next.B -> Screen(0, B)
+        Screen(n, l) =
+            see.n.l -> 
+                if n < maxnum - 1 then
+                    next.A -> Screen(n + 1, A)
+                    []
+                    next.B -> Screen(n + 1, B)
+                else
+                    next.A -> Screen(0, A)
+                    []
+                    next.B -> Screen(0, B)
+    within
+        Blank
+
+-- (c)
+
+Desk(l) = 
+    let
+        PressButton = 
+            next.l -> SeeDisplay
+        SeeDisplay = 
+            see?n.l -> ReadyCustomer(n)
+        ReadyCustomer(n) = 
+            present.l?c.n -> ServeCustomer(c)
+            []
+            return.l?c.n -> PressButton
+        ServeCustomer(c) = 
+            serve.l.c -> PressButton
+    within
+        PressButton
+
+-- (d)
+
+Customer(c) = 
+    let
+        Enter = 
+            enter.c -> GetTicket
+        GetTicket = 
+            ticket?n -> WaitSee(n)
+        WaitSee(n) = 
+            see.n?l -> PresentTicket(l, n)
+        PresentTicket(l, n) = 
+            present.l.c.n -> WaitServe
+            []
+            return.l.c.n -> WaitSee(n)
+        WaitServe = 
+            serve?l.c -> Leave
+        Leave = 
+            leave.c -> STOP
+    within
+        Enter
+
+-- (e)
+
+aSystem = {| next, see, present, return, serve |}
+
+System = 
+    (Ticket ||| Display ||| Desk(A) ||| Desk(B) ) 
+    [| aSystem |] 
+    (Customer(P) ||| Customer(Q) ||| Customer(R))
+
+-- (f)
+
+CustomerService(c) = 
+    enter.c -> serve?l.c -> leave.c -> CustomerService(c)
+AllCustomersServed = 
+    CustomerService(P) ||| CustomerService(Q) ||| CustomerService(R)
+    
+assert System :[deadlock free]
+assert AllCustomersServed [T= System \ {| ticket, next, see, present, return |}

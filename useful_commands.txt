@@ -1,5 +1,5 @@
 :load ~/Documents/csp/exercises02.csp
-:load ~/OneDrive/Documents/oxford_concurrency_distributed_systems/assignment/q2.csp
+:load ~/OneDrive/Documents/oxford_concurrency_distributed_systems/assignment/q3.csp
 :graph VM1
 assert VM1 :[deadlock free]
 assert P :[deterministic[F]]
